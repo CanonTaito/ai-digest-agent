@@ -1,0 +1,18 @@
+# Secrets — never commit
+config.json
+local.settings.json
+*.zip
+
+# State / logs
+seen_links.json
+digest.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/

@@ -1,0 +1,8 @@
+{
+  "gmail": {
+    "from": "canon.taito@gmail.com",
+    "to": "canon.taito@gmail.com",
+    "app_password": "xxxx xxxx xxxx xxxx"
+  },
+  "send_even_if_empty": false
+}
