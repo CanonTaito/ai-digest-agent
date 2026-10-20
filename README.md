@@ -79,11 +79,13 @@ az functionapp config appsettings set -g $RG -n $APP --settings \
 
 cd azure-function
 Compress-Archive -Path * -DestinationPath deploy.zip -Force
-az functionapp deploy -g $RG -n $APP --src-path deploy.zip --type zip
+az functionapp deployment source config-zip -g $RG -n $APP --src deploy.zip
 ```
 
 `SCM_DO_BUILD_DURING_DEPLOYMENT=true` makes Kudu install `requirements.txt`
-during the zip deploy — no `--build-remote` flag needed.
+during the zip deploy. Use `config-zip` rather than `az functionapp deploy
+--type zip` — the latter fails with *"This API isn't available in this
+environment yet"* on Linux Consumption apps.
 
 ## CI/CD (GitHub Actions)
 
