@@ -71,15 +71,34 @@ az functionapp create -g $RG -n $APP \
   --storage-account $STO
 
 az functionapp config appsettings set -g $RG -n $APP --settings \
+  SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+  ENABLE_ORYX=true \
   GMAIL_FROM="you@gmail.com" \
   GMAIL_TO="you@gmail.com" \
   GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
 
 cd azure-function
 Compress-Archive -Path * -DestinationPath deploy.zip -Force
-az functionapp deploy -g $RG -n $APP --src-path deploy.zip \
-  --type zip --build-remote true
+az functionapp deploy -g $RG -n $APP --src-path deploy.zip --type zip
 ```
+
+`SCM_DO_BUILD_DURING_DEPLOYMENT=true` makes Kudu install `requirements.txt`
+during the zip deploy — no `--build-remote` flag needed.
+
+## CI/CD (GitHub Actions)
+
+Every push to `master` that touches `azure-function/` redeploys automatically
+via `.github/workflows/deploy.yml`. It authenticates with **OIDC** (no Azure
+secret stored in GitHub — trust is scoped to this repo's `master` branch via a
+federated credential on the service principal).
+
+Required GitHub secrets:
+
+| Secret | Value |
+|---|---|
+| `AZURE_CLIENT_ID` | App registration (client) ID |
+| `AZURE_TENANT_ID` | Entra tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Subscription GUID |
 
 Logs:
 
