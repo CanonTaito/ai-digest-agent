@@ -27,6 +27,7 @@ from urllib.parse import urljoin, urlparse
 
 import azure.functions as func
 import requests
+from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 from bs4 import BeautifulSoup
 
@@ -164,7 +165,10 @@ def save_seen(seen: set[str]) -> None:
     for attempt in range(3):
         try:
             client = BlobServiceClient.from_connection_string(conn)
-            client.create_container(BLOB_CONTAINER, exist_ok=True)
+            try:
+                client.create_container(BLOB_CONTAINER)
+            except ResourceExistsError:
+                pass
             blob = client.get_blob_client(BLOB_CONTAINER, BLOB_NAME)
             trimmed = list(seen)[-500:]
             blob.upload_blob(json.dumps(trimmed), overwrite=True)
