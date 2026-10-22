@@ -38,3 +38,4 @@ jobs:
           --resource-group ${{ env.RESOURCE_GROUP }}
           --name ${{ env.AZURE_FUNCTIONAPP_NAME }}
           --src deploy.zip
+          --build-remote true

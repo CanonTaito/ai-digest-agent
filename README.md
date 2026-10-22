@@ -79,13 +79,18 @@ az functionapp config appsettings set -g $RG -n $APP --settings \
 
 cd azure-function
 Compress-Archive -Path * -DestinationPath deploy.zip -Force
-az functionapp deployment source config-zip -g $RG -n $APP --src deploy.zip
+az functionapp deployment source config-zip -g $RG -n $APP --src deploy.zip --build-remote true
 ```
 
-`SCM_DO_BUILD_DURING_DEPLOYMENT=true` makes Kudu install `requirements.txt`
-during the zip deploy. Use `config-zip` rather than `az functionapp deploy
---type zip` — the latter fails with *"This API isn't available in this
-environment yet"* on Linux Consumption apps.
+**Always pass `--build-remote true`** (or ship the `.deployment` marker included
+in this folder — both force Kudu to install `requirements.txt` during the zip
+deploy). Without it, Kudu assumes "zip deploys do not require any
+build-related actions": the code lands but `.python_packages` never gets
+installed, the worker dies with `ModuleNotFoundError: No module named
+'requests'`, **zero functions load, and the timer never fires** — the app
+looks deployed and healthy while doing nothing. Use `config-zip` rather than
+`az functionapp deploy --type zip` — the latter fails with *"This API isn't
+available in this environment yet"* on Linux Consumption apps.
 
 ## CI/CD (GitHub Actions)
 
