@@ -223,7 +223,7 @@ def send_email(html: str, story_count: int) -> None:
     schedule="0 0 22 * * *",
     arg_name="timer",
     run_on_startup=False,
-    use_monitor=False,
+    use_monitor=True,
 )
 def digest_timer(timer: func.TimerRequest) -> None:
     logging.info("AI digest run started.")
