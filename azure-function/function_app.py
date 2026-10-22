@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import smtplib
+import time
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -159,11 +160,20 @@ def load_seen() -> set[str]:
 
 def save_seen(seen: set[str]) -> None:
     conn = os.environ.get("AzureWebJobsStorage")
-    client = BlobServiceClient.from_connection_string(conn)
-    client.create_container(BLOB_CONTAINER, exist_ok=True)
-    blob = client.get_blob_client(BLOB_CONTAINER, BLOB_NAME)
-    trimmed = list(seen)[-500:]
-    blob.upload_blob(json.dumps(trimmed), overwrite=True)
+    last_err: Exception | None = None
+    for attempt in range(3):
+        try:
+            client = BlobServiceClient.from_connection_string(conn)
+            client.create_container(BLOB_CONTAINER, exist_ok=True)
+            blob = client.get_blob_client(BLOB_CONTAINER, BLOB_NAME)
+            trimmed = list(seen)[-500:]
+            blob.upload_blob(json.dumps(trimmed), overwrite=True)
+            return
+        except Exception as e:
+            last_err = e
+            logging.warning("save_seen attempt %d failed: %s", attempt + 1, e)
+            time.sleep(2 * (attempt + 1))
+    raise last_err  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------
@@ -241,5 +251,14 @@ def digest_timer(timer: func.TimerRequest) -> None:
 
     send_email(build_html(new_stories), len(new_stories))
     seen.update(s["url"] for s in new_stories)
-    save_seen(seen)
+    try:
+        save_seen(seen)
+    except Exception:
+        logging.error(
+            "Emailed %d stories but state save failed; they will be re-sent "
+            "on the next run unless this is fixed.",
+            len(new_stories),
+            exc_info=True,
+        )
+        return
     logging.info("Emailed %d stories to %s", len(new_stories), os.environ["GMAIL_TO"])
